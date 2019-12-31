@@ -274,15 +274,7 @@ func Flash(pkgName, port string, options *compileopts.Options) error {
 //
 // Note: this command is expected to execute just before exiting, as it
 // modifies global state.
-func FlashGDB(pkgName, port string, ocdOutput bool, options *compileopts.Options) error {
-	if port == "" {
-		var err error
-		port, err = getDefaultPort()
-		if err != nil {
-			return err
-		}
-	}
-
+func FlashGDB(pkgName string, ocdOutput bool, options *compileopts.Options) error {
 	config, err := builder.NewConfig(options)
 	if err != nil {
 		return err
@@ -452,7 +444,7 @@ func flashUF2UsingMSD(volume, tmppath string) error {
 	// find standard UF2 info path
 	var infoPath string
 	switch runtime.GOOS {
-	case "linux":
+	case "linux", "freebsd":
 		infoPath = "/media/*/" + volume + "/INFO_UF2.TXT"
 	case "darwin":
 		infoPath = "/Volumes/" + volume + "/INFO_UF2.TXT"
@@ -479,7 +471,7 @@ func flashHexUsingMSD(volume, tmppath string) error {
 	// find expected volume path
 	var destPath string
 	switch runtime.GOOS {
-	case "linux":
+	case "linux", "freebsd":
 		destPath = "/media/*/" + volume
 	case "darwin":
 		destPath = "/Volumes/" + volume
@@ -558,6 +550,8 @@ func getDefaultPort() (port string, err error) {
 		portPath = "/dev/cu.usb*"
 	case "linux":
 		portPath = "/dev/ttyACM*"
+	case "freebsd":
+		portPath = "/dev/cuaU*"
 	case "windows":
 		cmd := exec.Command("wmic",
 			"PATH", "Win32_SerialPort", "WHERE", "Caption LIKE 'USB Serial%'", "GET", "DeviceID")
@@ -767,7 +761,7 @@ func main() {
 				usage()
 				os.Exit(1)
 			}
-			err := FlashGDB(flag.Arg(0), *port, *ocdOutput, options)
+			err := FlashGDB(flag.Arg(0), *ocdOutput, options)
 			handleCompilerError(err)
 		}
 	case "run":
